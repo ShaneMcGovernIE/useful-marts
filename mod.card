@@ -1,0 +1,23 @@
+-- Sharing metadata, read by tooling and the manager detail pane only.
+return {
+  summary = "Mart lists with info and wrap: BUY shows how many of each item you already have (live), SELL shows the per-item sell price, and both lists wrap at the ends.",
+  author = "Shane McGovern",
+  contact = "https://github.com/bryanthaboi/gen1recomp",
+  tags = { "ui", "quality-of-life", "beginner" },
+  differences = {
+    changed = {
+      "BUY list rows gain a right-aligned '×N in bag' line under the item name; it updates as you buy",
+      "SELL list rows gain a right-aligned ¥ sell price line under the item name",
+      "BUY and SELL lists wrap: Up from the first row goes to the last, Down from the last goes to the first",
+    },
+    added = {},
+    known = {
+      "sell price is half the buy price, like the vanilla quantity box",
+      "key items, HMs and unknown item ids show no price (they cannot be sold)",
+      "the bag, the PC and all other lists are untouched",
+      "the quantity box and 'I can pay you' confirmation are unchanged",
+    },
+  },
+  credits = {},
+  compat = { engine = ">=0.0.0-0 <2.0.0", modApi = 2 },
+}
