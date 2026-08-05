@@ -74,6 +74,9 @@ T.eq(buyItems[1].sub(), "×7 in bag", "the count updates after a purchase")
 enrichBuy(buyItems, { save = nil })
 T.eq(buyItems[1].sub(), "×0 in bag", "a missing save still shows ×0")
 
+enrichBuy(buyItems, nil)
+T.eq(buyItems[1].sub(), "×0 in bag", "a nil game still shows ×0, no crash")
+
 -- ---------- ListMenu wrapper ----------
 
 local ListMenu = require("src.ui.ListMenu")
@@ -100,6 +103,12 @@ local other = ListMenu.new({ data = Data }, "ITEMS", untouched, {})
 T.eq(untouched[1].sub, nil, "other list titles are left alone")
 T.eq(other.wrap, nil, "other lists keep their vanilla wrap setting")
 T.eq(sellItems[1].sub, "¥150", "SELL sub stays a plain string")
+
+local nilOpts = { value = "FIX_POTION", label = "FIX POTION", right = "x1" }
+local noOpts = ListMenu.new({ data = Data }, "SELL", { nilOpts }, nil)
+T.check(noOpts ~= nil, "nil opts constructs without crashing")
+T.eq(nilOpts.sub, "¥150", "nil opts still enriches SELL items")
+T.eq(noOpts.wrap, true, "nil opts still enables wrap")
 
 run.release()
 T.finish("useful_marts")
