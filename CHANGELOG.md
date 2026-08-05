@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.1] - 2026-08-05
+
+### Fixed
+
+- The mart ListMenu wrapper no longer crashes when called with no options
+  table (the engine's own `ListMenu.new` is nil-safe; the wrapper wasn't).
+- `enrichBuy` no longer crashes when invoked with a nil game.
+- BUY/SELL detection is hardened against a stub data table with no items.
+
+### Changed
+
+- The duplicated BUY/SELL title check was hoisted into an `isMart` helper.
+
 ## [1.0.0] - 2026-08-02
 
 ### Added

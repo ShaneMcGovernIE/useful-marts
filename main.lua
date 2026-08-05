@@ -38,7 +38,7 @@ end
 -- save.inventory in place, so a closure over the save gives the current
 -- amount without rebuilding the list.
 local function enrichBuy(items, game)
-  local inv = game.save and game.save.inventory
+  local inv = game and game.save and game.save.inventory
   for _, it in ipairs(items) do
     it.sub = function()
       return ("×%d in bag"):format(inv and inv[it.value] or 0)
@@ -48,13 +48,15 @@ local function enrichBuy(items, game)
 end
 
 ListMenu.new = function(game, title, items, opts)
-  if game and game.data then
+  opts = opts or {}
+  local isMart = title == "SELL" or title == "BUY"
+  if game and game.data and game.data.items then
     if title == "SELL" then
       enrichSell(items, game.data)
     elseif title == "BUY" then
       enrichBuy(items, game)
     end
-    if title == "SELL" or title == "BUY" then
+    if isMart then
       opts.wrap = true
     end
   end
