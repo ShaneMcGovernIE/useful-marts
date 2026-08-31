@@ -1,13 +1,14 @@
 # Useful Marts
 
-In the Poké Mart, every list row gains a second, right-aligned line, and
-the lists wrap at the ends:
+In the Poké Mart, the BUY and SELL lists show useful secondary information
+without replacing the engine's native item-box fields, and the lists wrap at
+the ends:
 
-- **BUY**: how many of that item you already have in the bag ("×N in
-  bag"), under the item name and its ¥ buy price. The count updates
-  immediately as you buy.
+- **BUY**: how many of that item you already have in the bag ("×N"), under
+  the item name while the native ¥ buy price remains on the right. The count
+  updates immediately as you buy.
 - **SELL**: the item's per-item sell price (half the buy price), under the
-  item name and its usual "xN" count.
+  item name while the native "xN" count remains on the right.
 - **Wrap**: Up on the first row jumps to the last, Down on the last row
   jumps to the first, on both lists.
 
@@ -17,9 +18,9 @@ the lists wrap at the ends:
    `mods/` directory and enable it.
 2. Talk to a mart clerk.
 3. On BUY, each item shows how many you own (and it tracks your purchases);
-   on SELL, each sellable item shows its ¥ sell price beneath the name and
-   count. Key items and HMs (which cannot be sold) show neither price,
-   exactly as vanilla.
+   on SELL, each sellable item shows its ¥ sell price beneath the name beside
+   the native count. Key items and HMs (which cannot be sold) show neither
+   price, exactly as vanilla.
 
 ## Notes
 

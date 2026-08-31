@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.0.2] - 2026-08-31
+
+### Fixed
+
+- Updated the mart adapter for the current engine's untitled item-box BUY and
+  SELL lists, including native price/count fields and real CANCEL rows.
+- Prevented unrelated titled lists from being mistaken for SELL lists.
+- Made the ListMenu compatibility patch safe to load repeatedly during mod
+  reloads, without stacking constructors or draw callbacks.
+
+### Changed
+
+- Current item boxes keep the engine's native BUY price or SELL quantity on
+  the right and show this mod's compact count or sell price beneath the item
+  name.
+- Declared the mod as Gen 1-only and compatible through engine 0.2.x.
+- Release CI now lints, strictly validates, and runs the engine-path test
+  before packaging.
+
 ## [1.0.1] - 2026-08-05
 
 ### Fixed

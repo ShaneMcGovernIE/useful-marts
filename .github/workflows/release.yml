@@ -52,6 +52,32 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install LuaJIT
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y luajit
+
+      - name: Checkout engine validation sources
+        uses: actions/checkout@v4
+        with:
+          repository: bryanthaboi/gen1recomp
+          ref: dev
+          path: .modkit-engine
+          sparse-checkout: |
+            src
+            tests
+            tools/modkit.py
+            tools/rom_manifest.json
+          sparse-checkout-cone-mode: false
+
+      - name: Validate and test mod
+        run: |
+          set -euo pipefail
+          python3 .modkit-engine/tools/modkit.py lint "$GITHUB_WORKSPACE" --repo "$GITHUB_WORKSPACE/.modkit-engine"
+          python3 .modkit-engine/tools/modkit.py validate "$GITHUB_WORKSPACE" --strict --base fixture --repo "$GITHUB_WORKSPACE/.modkit-engine"
+          (cd .modkit-engine && luajit "$GITHUB_WORKSPACE/tests/useful_marts_test.lua" ..)
+
       - name: Determine version
         id: ver
         env:
@@ -140,7 +166,8 @@ jobs:
           git archive HEAD | tar -x -C "$staging"
 
           rm -rf "$staging/.github" "$staging/.gitattributes" \
-                 "$staging/.gitignore" "$staging/.luarc.json"
+                 "$staging/.gitignore" "$staging/.modkitignore" \
+                 "$staging/.luarc.json" "$staging/tests" "$staging/docs"
 
           python3 - "$staging/manifest.json" "$VERSION" <<'PY'
           import json, sys
