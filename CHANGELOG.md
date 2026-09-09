@@ -5,6 +5,7 @@
 ### Fixed
 - SELL price lines now skip `HM_*` item ids the same way ShopMenu does, even when
   the item definition has a numeric price and is not marked `keyItem`.
+- Regression test accepts current ShopMenu `item.count` quantity (CI engine `dev`), not only legacy `right`.
 - Untitled item-box classification treats `item.count` (current ShopMenu SELL
   field) like a quantity marker, so sell lists without `onSelectKey` are not
   mistaken for BUY.
