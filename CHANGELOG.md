@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.0.3] - 2026-09-09
+
+### Fixed
+- SELL price lines now skip `HM_*` item ids the same way ShopMenu does, even when
+  the item definition has a numeric price and is not marked `keyItem`.
+- Untitled item-box classification treats `item.count` (current ShopMenu SELL
+  field) like a quantity marker, so sell lists without `onSelectKey` are not
+  mistaken for BUY.
+
+### Changed
+- Dropped the redundant `ui.list_menu` wrap hook; wrap stays on the ListMenu
+  adapter, which is the only place that can decorate shop rows.
+- Documented item-box layout constants and why the ListMenu patch installs at
+  chunk load (F5-safe single marker).
+
+
 ## [1.0.2] - 2026-08-31
 
 ### Fixed

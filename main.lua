@@ -2,13 +2,15 @@
 --
 -- The engine had two shop-list contracts over its lifetime:
 --   * legacy full-screen lists titled "BUY" / "SELL";
---   * current item-box lists with no title, item.price for BUY, item.right for
---     SELL, and a real CANCEL row.
+--   * current item-box lists with no title, item.price for BUY, item.count for
+--     SELL (ListMenu draws the ×N), and a real CANCEL row.
 --
--- The current public ui.list_menu hook exposes navigation options, but not
--- shop rows or their renderer.  The small private adapter below is therefore
--- kept in one place, is installed only once per process, and decorates only
--- lists it can positively classify as shops.
+-- The public ui.list_menu hook only exposes navigation opts (wrap, pageJump,
+-- …), not shop rows or their renderer — see wiki Reference: Hooks. The small
+-- private adapter below is therefore kept in one place, is installed only
+-- once per process (chunk load, so F5 re-exec updates the marker instead of
+-- stacking wrappers), and decorates only lists it can positively classify as
+-- shops. Declares engine_internals for the Font/ListMenu requires.
 local Font = require("src.render.Font")
 local ListMenu = require("src.ui.ListMenu")
 
@@ -16,9 +18,11 @@ local MOD_ID = "useful_marts"
 local PATCH_KEY = "__useful_marts_patch"
 local INSTANCE_KEY = "_useful_marts_kind"
 
+-- Mirrored from src/ui/ListMenu.lua item-box draw (ITEM_NAME_X / ITEM_TOP_Y).
+-- Drift here if the engine moves the item-box name column or first-row Y.
 local ITEM_NAME_X = 48
 local ITEM_TOP_Y = 32
-local ITEM_INFO_X = 48
+local ITEM_INFO_X = ITEM_NAME_X
 
 local function itemBoxOptions(opts)
   return type(opts) == "table" and opts.itemBox == true
@@ -30,7 +34,7 @@ local function kindFromTitle(title)
   return nil
 end
 
--- Current ShopMenu passes title=nil.  Its callbacks and row fields are the
+-- Current ShopMenu passes title=nil. Its callbacks and row fields are the
 -- only available discriminator until the engine exposes a shop-row hook.
 local function classify(title, items, opts)
   opts = opts or {}
@@ -49,17 +53,18 @@ local function classify(title, items, opts)
   end
 
   -- Field-based inference is only safe for the current untitled contract.
-  -- Other legacy menus commonly use `right` for their own secondary text.
+  -- BUY uses item.price; SELL uses item.count (ListMenu) or legacy item.right.
+  -- Other menus commonly use `right` for their own secondary text when titled.
   if title == nil and itemBoxOptions(opts) then
-    local hasPrice, hasRight = false, false
+    local hasPrice, hasQty = false, false
     for _, item in ipairs(items or {}) do
       if not item.cancel then
         if item.price ~= nil then hasPrice = true end
-        if item.right ~= nil then hasRight = true end
+        if item.right ~= nil or item.count ~= nil then hasQty = true end
       end
     end
-    if hasPrice and not hasRight then return "buy" end
-    if hasRight and not hasPrice then return "sell" end
+    if hasPrice and not hasQty then return "buy" end
+    if hasQty and not hasPrice then return "sell" end
   end
 
   -- A BUY list containing only its CANCEL terminator still has the shop-only
@@ -70,8 +75,11 @@ local function classify(title, items, opts)
   return nil
 end
 
-local function sellPrice(def)
-  if not def or def.keyItem or type(def.price) ~= "number" then return nil end
+-- Match ShopMenu unsellable rules: key items, HM_* ids, missing/non-numeric price.
+local function sellPrice(def, itemId)
+  if not def or def.keyItem then return nil end
+  if type(itemId) == "string" and itemId:find("^HM_") then return nil end
+  if type(def.price) ~= "number" then return nil end
   return ("¥%d"):format(math.floor(def.price / 2))
 end
 
@@ -79,7 +87,7 @@ local function isItemValue(item)
   return item and not item.cancel and type(item.value) == "string"
 end
 
--- Pure builders remain exported for headless tests.  The itemBox form stores
+-- Pure builders remain exported for headless tests. The itemBox form stores
 -- private metadata instead of putting callbacks into item.sub: the current
 -- native renderer expects item.sub to already be a string.
 local function enrichSell(items, data, opts)
@@ -88,7 +96,7 @@ local function enrichSell(items, data, opts)
   for _, item in ipairs(items or {}) do
     item._usefulMartsSellPrice = nil
     if isItemValue(item) then
-      local price = sellPrice(definitions and definitions[item.value])
+      local price = sellPrice(definitions and definitions[item.value], item.value)
       if price then
         if itemBox then
           item._usefulMartsSellPrice = price
@@ -166,7 +174,7 @@ local function drawExtras(self, kind, vanillaDraw)
       text = currentItemText(self, item, kind)
       if text then
         -- The current item box already uses the right side for native price or
-        -- quantity.  The added value sits under the item name on that same
+        -- quantity. The added value sits under the item name on that same
         -- secondary row, so both values remain visible without overlap.
         Font.draw(text, ITEM_INFO_X,
           ITEM_TOP_Y + (row - 1) * 16 + 8)
@@ -227,15 +235,7 @@ end
 patch.active = true
 
 return function(mod)
-  if mod.hooks and mod.hooks.wrap then
-    mod.hooks:wrap("ui.list_menu", function(next, opts, ctx)
-      opts = next(opts, ctx) or opts
-      local kind = ctx and ctx.kind
-      if kind == "shop_buy" or kind == "shop_sell" then
-        opts.wrap = true
-      end
-      return opts
-    end)
-  end
+  -- Wrap is applied in the ListMenu adapter above (ui.list_menu cannot mutate
+  -- shop rows or draw). Exports stay public for headless tests.
   mod.exports = { enrichSell = enrichSell, enrichBuy = enrichBuy }
 end

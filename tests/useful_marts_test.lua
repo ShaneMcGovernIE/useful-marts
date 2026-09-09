@@ -67,6 +67,21 @@ T.eq(unsellable[1].sub, nil, "key item has no price")
 T.eq(unsellable[2].sub, nil, "HM has no price")
 T.eq(unsellable[3].sub, nil, "unknown id has no price")
 
+-- HM_* ids stay unpriced even when the def has a numeric price and is not keyItem
+-- (matches ShopMenu: keyItem OR id:find("^HM_"))
+local hmPriced = { { value = "HM_01", label = "HM01 CUT", right = "x1" } }
+enrichSell(hmPriced, { items = {
+  HM_01 = { id = "HM_01", name = "HM01 CUT", price = 0, keyItem = false },
+} })
+T.eq(hmPriced[1].sub, nil, "priced HM_ id has no sell price")
+
+local hmPricedBox = { { value = "HM_02", label = "HM02 FLY", count = 1 } }
+enrichSell(hmPricedBox, { items = {
+  HM_02 = { id = "HM_02", name = "HM02 FLY", price = 1000 },
+} }, { itemBox = true })
+T.eq(hmPricedBox[1]._usefulMartsSellPrice, nil, "itemBox HM_ id has no sell price")
+T.eq(hmPricedBox[1].sub, nil, "itemBox HM_ clears sub")
+
 -- a zero-price sellable item still gets its (¥0) line
 local freebie = { { value = "FIX_BALL", label = "FIX BALL", right = "x1" } }
 enrichSell(freebie, { items = { FIX_BALL = { id = "FIX_BALL", price = 0 } } })
@@ -233,6 +248,22 @@ local disabledList = ListMenu.new(disabledGame, nil, disabledItems, {
 T.eq(disabledList.wrap, nil, "disabled mod leaves current list vanilla")
 T.eq(disabledItems[1]._usefulMartsBuy, nil,
   "disabled mod leaves current rows unmodified")
+
+-- Untitled itemBox SELL shaped by item.count (current ShopMenu field), without
+-- onSelectKey — must not fall through to the dialogue/money BUY fallback.
+local countSellItems = {
+  { value = "FIX_POTION", label = "FIX POTION", count = 2 },
+  { cancel = true, label = "CANCEL" },
+}
+local countSellGame = gameWith({ FIX_POTION = 2 }, { "FIX_POTION" })
+local countSellList = ListMenu.new(countSellGame, nil, countSellItems, {
+  itemBox = true, dialogue = true, money = function() return 0 end,
+})
+T.eq(countSellList.wrap, true, "count-field SELL list wraps")
+T.eq(countSellItems[1]._usefulMartsSellPrice, "¥150",
+  "count-field SELL gets a sell price")
+T.eq(countSellItems[1]._usefulMartsBuy, nil,
+  "count-field SELL is not classified as BUY")
 
 -- The legacy full-screen contract remains supported for older engines.
 local legacySell = { { value = "FIX_POTION", label = "FIX POTION", right = "x3" } }
