@@ -214,8 +214,14 @@ local sellList = sellGame.stack:top()
 T.eq(sellList.title, nil, "current SELL list has no title")
 T.eq(sellList.itemBox, true, "current SELL list uses the item box")
 T.eq(sellList.wrap, true, "current SELL list wraps")
-T.eq(sellList.items[1].right, "x3", "native SELL quantity survives")
-T.eq(sellList.items[2].right, nil, "key-item quantity stays hidden")
+-- Current upstream ShopMenu uses item.count; older local builds used right="xN".
+if sellList.items[1].count ~= nil then
+  T.eq(sellList.items[1].count, 3, "native SELL quantity survives")
+else
+  T.eq(sellList.items[1].right, "x3", "native SELL quantity survives")
+end
+T.eq(sellList.items[2].count or sellList.items[2].right, nil,
+  "key-item quantity stays hidden")
 calls = {}
 sellList:draw()
 T.check(drawn("¥150") ~= nil, "current SELL draw adds the sell price")
