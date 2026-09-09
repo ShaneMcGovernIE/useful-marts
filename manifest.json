@@ -1,11 +1,13 @@
 {
   "id": "useful_marts",
   "name": "Useful Marts",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "api": 2,
   "entry": "main.lua",
   "profile": "content",
-  "games": ["gen1"],
+  "games": [
+    "gen1"
+  ],
   "game_version": ">=0.0.0-0 <0.3.0",
   "category": "UI",
   "priority": 100,
