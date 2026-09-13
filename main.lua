@@ -13,6 +13,9 @@
 -- shops. Declares engine_internals for the Font/ListMenu requires.
 local Font = require("src.render.Font")
 local ListMenu = require("src.ui.ListMenu")
+local okChrome, Chrome = pcall(require, "src.ui.gen2.Chrome")
+local okMart, MartMenu = pcall(require, "src.ui.gen2.MartMenu")
+local okPack, PackMenu = pcall(require, "src.ui.gen2.PackMenu")
 
 local MOD_ID = "useful_marts"
 local PATCH_KEY = "__useful_marts_patch"
@@ -234,8 +237,132 @@ end
 -- wrapping ListMenu.new or ListMenu.draw a second time.
 patch.active = true
 
+-- ---------- Gen 2 Support (MartMenu & PackMenu) ----------
+
+local function sellPriceGen2(items, itemId)
+  local def = items and items[itemId]
+  if not def or def.canToss == false or def.keyItem then return nil end
+  if type(itemId) == "string" and itemId:find("^HM_") then return nil end
+  if type(def.price) ~= "number" then return nil end
+  return ("¥%d"):format(math.floor(def.price / 2))
+end
+
+local function drawGen2BuyCounts(self, vanillaDraw)
+  vanillaDraw(self)
+  local state = loaderState(self.game)
+  if state == false then return end
+  local inventory = self.save and self.save.inventory
+  for row = 1, 4 do
+    local i = row + self.scroll
+    local ty = 4 + (row - 1) * 2
+    if i <= #self.entries then
+      local entry = self.entries[i]
+      if entry and entry.id then
+        local count = inventory and tonumber(inventory[entry.id]) or 0
+        Chrome.print(("×%d"):format(math.floor(count)), 2, ty + 1)
+      end
+    end
+  end
+end
+
+local function updateGen2Buy(self, input, vanillaUpdate)
+  local state = loaderState(self.game)
+  if state == false then
+    return vanillaUpdate(self, input)
+  end
+  if input then
+    if input:wasPressed("up") and self.index == 1 then
+      self.index = self:total()
+      self:ensureVisible()
+      return
+    elseif input:wasPressed("down") and self.index == self:total() then
+      self.index = 1
+      self:ensureVisible()
+      return
+    end
+  end
+  return vanillaUpdate(self, input)
+end
+
+local function enterGen2Sell(self, vanillaEnterSell)
+  vanillaEnterSell(self)
+  local state = loaderState(self.game)
+  if state == false then return end
+  if self.pack then
+    self.pack._usefulMartsSell = true
+  end
+end
+
+local function drawGen2PackList(self, listX, listY, vanillaDrawList)
+  vanillaDrawList(self, listX, listY)
+  local state = loaderState(self.game)
+  if state == false then return end
+  if not self._usefulMartsSell then return end
+
+  for row = 1, 5 do
+    local i = row + self.scroll
+    local ty = listY + (row - 1) * 2
+    if i <= #self.rows then
+      local entry = self.rows[i]
+      if entry and entry.id then
+        local price = sellPriceGen2(self.items, entry.id)
+        if price then
+          Chrome.printThrough(price, listX, ty + 1, Chrome.DEFAULT_BOX_PALETTE)
+        end
+      end
+    end
+  end
+end
+
+if okMart and MartMenu and okChrome and Chrome then
+  local martPatch = MartMenu[PATCH_KEY]
+  if not martPatch then
+    martPatch = {
+      vanillaUpdateBuy = MartMenu.updateBuy,
+      vanillaDrawBuyList = MartMenu.drawBuyList,
+      vanillaEnterSell = MartMenu.enterSell,
+      active = false,
+    }
+    MartMenu.updateBuy = function(self, input)
+      if not martPatch.active then return martPatch.vanillaUpdateBuy(self, input) end
+      return updateGen2Buy(self, input, martPatch.vanillaUpdateBuy)
+    end
+    MartMenu.drawBuyList = function(self)
+      if not martPatch.active then return martPatch.vanillaDrawBuyList(self) end
+      return drawGen2BuyCounts(self, martPatch.vanillaDrawBuyList)
+    end
+    MartMenu.enterSell = function(self)
+      if not martPatch.active then return martPatch.vanillaEnterSell(self) end
+      return enterGen2Sell(self, martPatch.vanillaEnterSell)
+    end
+    MartMenu[PATCH_KEY] = martPatch
+  end
+  martPatch.active = true
+end
+
+if okPack and PackMenu and okChrome and Chrome then
+  local packPatch = PackMenu[PATCH_KEY]
+  if not packPatch then
+    packPatch = {
+      vanillaDrawList = PackMenu.drawList,
+      active = false,
+    }
+    PackMenu.drawList = function(self, listX, listY)
+      if not packPatch.active then return packPatch.vanillaDrawList(self, listX, listY) end
+      return drawGen2PackList(self, listX, listY, packPatch.vanillaDrawList)
+    end
+    PackMenu[PATCH_KEY] = packPatch
+  end
+  packPatch.active = true
+end
+
 return function(mod)
-  -- Wrap is applied in the ListMenu adapter above (ui.list_menu cannot mutate
-  -- shop rows or draw). Exports stay public for headless tests.
-  mod.exports = { enrichSell = enrichSell, enrichBuy = enrichBuy }
+  -- Wrap is applied in the ListMenu and MartMenu/PackMenu adapters above.
+  -- Exports stay public for headless tests.
+  mod.exports = {
+    enrichSell = enrichSell,
+    enrichBuy = enrichBuy,
+    sellPrice = sellPrice,
+    sellPriceGen2 = sellPriceGen2,
+  }
 end

@@ -277,11 +277,113 @@ local legacy = require("src.ui.ListMenu").new({ data = Data }, "SELL", legacySel
 T.eq(legacy.wrap, true, "legacy SELL list wraps")
 T.eq(legacySell[1].sub, "¥150", "legacy SELL still gets a secondary line")
 
+-- ---------- Gen 2 MartMenu & PackMenu integration ----------
+
+local runGen2 = T.sdk.loadMod(MOD_PATH, { data = T.fixtures.fresh(), root = MOD_ROOT, generation = 2 })
+T.eq(#runGen2.errors, 0, "Gen 2 loads clean (" .. tostring(runGen2.errors[1]) .. ")")
+T.eq(runGen2.mod and runGen2.mod.state, "loaded", "reached the loaded state under Gen 2")
+
+local MartMenu = require("src.ui.gen2.MartMenu")
+local PackMenu = require("src.ui.gen2.PackMenu")
+
+local gen2Save = {
+  inventory = { FIX_POTION = 3, FIX_BALL = 1, FIX_KEY = 1, HM_01 = 1 },
+  player = { money = 3000 },
+}
+local gen2Items = {
+  FIX_POTION = { id = "FIX_POTION", name = "FIX POTION", pocket = "ITEM", price = 300, canToss = true },
+  FIX_BALL = { id = "FIX_BALL", name = "FIX BALL", pocket = "BALL", price = 200, canToss = true },
+  FIX_KEY = { id = "FIX_KEY", name = "FIX KEY", pocket = "KEY_ITEM", price = 0, canToss = false, keyItem = true },
+  HM_01 = { id = "HM_01", name = "HM01 CUT", pocket = "TM_HM", price = 1000, canToss = false },
+}
+local gen2Marts = {
+  lists = { { "FIX_POTION", "FIX_BALL" } },
+}
+local gen2Input = {
+  pressed = {},
+  press = function(self, ...)
+    for _, button in ipairs({ ... }) do self.pressed[button] = true end
+  end,
+  wasPressed = function(self, button)
+    if self.pressed[button] then
+      self.pressed[button] = nil
+      return true
+    end
+    return false
+  end,
+  isDown = function() return false end,
+}
+local gen2Game = {
+  input = gen2Input,
+  save = gen2Save,
+  data = { items = gen2Items, gen2Marts = gen2Marts },
+  stack = {
+    states = {},
+    push = function(self, s) self.states[#self.states + 1] = s end,
+    pop = function(self) return table.remove(self.states) end,
+    top = function(self) return self.states[#self.states] end,
+  },
+}
+
+local mart = MartMenu.new(gen2Game, { save = gen2Save, items = gen2Items, marts = gen2Marts })
+T.eq(mart.phase, "top", "Gen 2 mart opens on top menu")
+gen2Input:press("a")
+mart:update(0)
+T.eq(mart.phase, "buy", "Gen 2 mart enters BUY")
+
+-- Wrap test on BUY list: Up on 1 -> CANCEL, Down on CANCEL -> 1
+T.eq(mart.index, 1, "Gen 2 BUY starts at index 1")
+gen2Input:press("up")
+mart:update(0)
+T.eq(mart.index, mart:total(), "Gen 2 BUY wraps up from 1 to CANCEL")
+gen2Input:press("down")
+mart:update(0)
+T.eq(mart.index, 1, "Gen 2 BUY wraps down from CANCEL to 1")
+
+-- Live inventory count on BUY list
+calls = {}
+mart:drawBuyList()
+T.check(drawn("×3") ~= nil, "Gen 2 BUY draw adds live bag count")
+gen2Save.inventory.FIX_POTION = 8
+calls = {}
+mart:drawBuyList()
+T.check(drawn("×8") ~= nil, "Gen 2 BUY draw updates live count")
+T.check(drawn("×3") == nil, "Gen 2 BUY draw does not keep stale count")
+
+-- SELL flow integration
+gen2Input:press("b")
+mart:update(0)
+T.eq(mart.phase, "top", "returned to top menu from BUY")
+gen2Input:press("down")
+mart:update(0)
+T.eq(mart.topIndex, 2, "selected SELL on top menu")
+gen2Input:press("a")
+mart:update(0)
+T.eq(mart.phase, "sell", "Gen 2 mart entered SELL")
+T.check(mart.pack ~= nil, "Gen 2 sell pack is built")
+T.eq(mart.pack._usefulMartsSell, true, "Gen 2 sell pack is tagged by useful_marts")
+
+calls = {}
+mart.pack:drawList(8, 2)
+T.check(drawn("¥150") ~= nil, "Gen 2 SELL pack draws sell price")
+T.check(drawn("¥500") == nil, "Gen 2 SELL pack does not price HM")
+
+-- Overworld Pack Menu (opened outside mart)
+local overworldPack = PackMenu.new(gen2Game, { save = gen2Save, items = gen2Items })
+T.eq(overworldPack._usefulMartsSell, nil, "overworld pack is not marked")
+calls = {}
+overworldPack:drawList(8, 2)
+T.check(drawn("¥150") == nil, "overworld pack does not draw sell price")
+runGen2.release()
+
 -- Loading the mod twice must not wrap the shared constructor twice.
 run.release()
 local listMenuModule = require("src.ui.ListMenu")
 local constructorBeforeReload = listMenuModule.new
 local drawBeforeReload = listMenuModule.draw
+local martUpdateBuyBeforeReload = MartMenu.updateBuy
+local martDrawBuyListBeforeReload = MartMenu.drawBuyList
+local packDrawListBeforeReload = PackMenu.drawList
 local modFile = MOD_ROOT and (MOD_ROOT .. "/" .. MOD_PATH .. "/main.lua")
   or (MOD_PATH .. "/main.lua")
 local secondEntry = assert(loadfile(modFile))
@@ -291,6 +393,12 @@ T.eq(listMenuModule.new, constructorBeforeReload,
   "reloading does not wrap the shared constructor twice")
 T.eq(listMenuModule.draw, drawBeforeReload,
   "reloading does not replace the shared draw function")
+T.eq(MartMenu.updateBuy, martUpdateBuyBeforeReload,
+  "reloading does not re-wrap MartMenu.updateBuy")
+T.eq(MartMenu.drawBuyList, martDrawBuyListBeforeReload,
+  "reloading does not re-wrap MartMenu.drawBuyList")
+T.eq(PackMenu.drawList, packDrawListBeforeReload,
+  "reloading does not re-wrap PackMenu.drawList")
 local reloadItems = { { value = "FIX_POTION", label = "FIX POTION", price = "¥300" } }
 local reloadGame = gameWith({ FIX_POTION = 2 }, {})
 local reloadList = require("src.ui.ListMenu").new(reloadGame, nil, reloadItems,
