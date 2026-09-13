@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.1.0] - 2026-09-13
+
+### Added
+- Dual-generation support for Pokémon Gen 2 games (Gold, Silver, Crystal) alongside Gen 1 (Red, Blue, Yellow).
+- Gen 2 `MartMenu` BUY list shows live bag inventory count ("×N") under each item name, updating immediately on purchase.
+- Gen 2 `MartMenu` BUY list wraps at the ends (Up on row 1 jumps to CANCEL, Down on CANCEL jumps to row 1) across all mart types (Standard, Herb Shop, Bargain Shop, Pharmacy).
+- Gen 2 `MartMenu` SELL flow tags the opened `PackMenu` to display per-item sell prices ("¥N") under sellable item names.
+- Key items, HMs, and unpriced items remain unpriced in Gen 2 sell lists.
+- Overworld Pack menu outside marts remains completely vanilla.
+
 ## [1.0.3] - 2026-09-09
 
 ### Fixed

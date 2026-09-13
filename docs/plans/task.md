@@ -2,9 +2,6 @@
 
 | Task | Status | Notes |
 | --- | --- | --- |
-| 1. Explore project context | Complete | Explored Gen 1 vs Gen 2 mart implementations, ShopMenu, MartMenu, PackMenu, modkit gen2check |
-| 2. Ask clarifying questions | Complete | Scope: Dual Gen 1 + Gen 2; Sell price only in Mart sell flow |
-| 3. Propose 2-3 approaches | Complete | Approach 1 selected by user |
-| 4. Present design | Complete | Concise design presented below |
-| 5. Write design doc | In Progress | Saving to docs/plans/2026-09-13-gen2-support-design.md |
-| 6. Transition to implementation | Pending | Invoke writing-plans skill |
+| Task 1: Add Gen 2 Test Coverage | complete | Tests written in tests/useful_marts_test.lua and verified failing before implementation |
+| Task 2: Implement Gen 2 Support | complete | Patched MartMenu and PackMenu in main.lua; 85/85 tests passing |
+| Task 3: Metadata, Docs & Final Validation | complete | Manifest, mod.card, README, CHANGELOG updated; modkit validate/lint/gen2check passing |

@@ -19,5 +19,5 @@ return {
     },
   },
   credits = {},
-  compat = { engine = ">=0.0.0-0 <0.3.0", modApi = 2 },
+  compat = { engine = ">=0.0.0-0 <2.0.0", modApi = 2 },
 }

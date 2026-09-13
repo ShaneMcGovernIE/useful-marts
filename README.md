@@ -1,8 +1,6 @@
 # Useful Marts
 
-In the Poké Mart, the BUY and SELL lists show useful secondary information
-without replacing the engine's native item-box fields, and the lists wrap at
-the ends:
+In the Poké Mart (across Gen 1 and Gen 2 games: Red, Blue, Yellow, Gold, Silver, Crystal), the BUY and SELL lists show useful secondary information without replacing the engine's native item-box fields, and the lists wrap at the ends:
 
 - **BUY**: how many of that item you already have in the bag ("×N"), under
   the item name while the native ¥ buy price remains on the right. The count
@@ -10,7 +8,8 @@ the ends:
 - **SELL**: the item's per-item sell price (half the buy price), under the
   item name while the native "xN" count remains on the right.
 - **Wrap**: Up on the first row jumps to the last, Down on the last row
-  jumps to the first, on both lists.
+  jumps to the first, on both lists. In Gen 2, SELL is handled through the Pack,
+  which already wraps natively.
 
 ## How to try it
 
